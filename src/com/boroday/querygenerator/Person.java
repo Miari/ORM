@@ -1,18 +1,14 @@
 package com.boroday.querygenerator;
 
-@Table (name = "Persons")
+@Table(name = "Persons")
 public class Person {
     @Column
     private int id;
 
-    @Column (name = "person_name")
-    @InsertColumn (name = "person_name")
-    //@UpdateColumn (name = "person_name")
+    @Column(name = "person_name")
     private String name;
 
     @Column
-    @InsertColumn
-    @UpdateColumn
     private double salary;
 
     public void setId(int id) {

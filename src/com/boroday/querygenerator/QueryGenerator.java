@@ -1,7 +1,6 @@
 package com.boroday.querygenerator;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.util.StringJoiner;
 
 public class QueryGenerator {
@@ -63,8 +62,8 @@ public class QueryGenerator {
         return stringBuilder.toString();
     }
 
-    public String insert(Object value) {
-        Class<?> clazz = Person.class;
+    public String insert(Object value) throws IllegalAccessException {
+        Class<?> clazz = value.getClass();
 
         Table annotation = clazz.getAnnotation(Table.class);
         if (annotation == null) {
@@ -72,32 +71,33 @@ public class QueryGenerator {
         }
 
         StringBuilder stringBuilder = new StringBuilder("INSERT INTO Persons (");
+        StringJoiner stringJoinerFields = new StringJoiner(", ");
+        StringJoiner stringJoinerValues = new StringJoiner(", ");
 
         for (Field declaredField : clazz.getDeclaredFields()) {
-            InsertColumn insertColumnAnnotation = declaredField.getAnnotation(InsertColumn.class);
-            if (insertColumnAnnotation != null) {
-                String columnName = insertColumnAnnotation.name().isEmpty() ? declaredField.getName() : insertColumnAnnotation.name();
-                stringBuilder.append(columnName);
-
-                Type typeOfDeclaredField = declaredField.getType();
-
-                if (typeOfDeclaredField.getTypeName().equals("java.lang.String")) {
-                    stringBuilder.append(") VALUES ('");
-                    stringBuilder.append(value);
-                    stringBuilder.append("');");
+            Column ColumnAnnotation = declaredField.getAnnotation(Column.class);
+            if (ColumnAnnotation != null) {
+                String columnName = ColumnAnnotation.name().isEmpty() ? declaredField.getName() : ColumnAnnotation.name();
+                stringJoinerFields.add(columnName);
+                declaredField.setAccessible(true);
+                if (declaredField.getType().getName().equals("java.lang.String")) {
+                    stringJoinerValues.add("'" + declaredField.get(value).toString() + "'");
                 } else {
-                    stringBuilder.append(") VALUES (");
-                    stringBuilder.append(value);
-                    stringBuilder.append(");");
+                    stringJoinerValues.add(declaredField.get(value).toString());
                 }
-                break;
+                declaredField.setAccessible(false);
             }
         }
+
+        stringBuilder.append(stringJoinerFields);
+        stringBuilder.append(") VALUES (");
+        stringBuilder.append(stringJoinerValues);
+        stringBuilder.append(");");
         return stringBuilder.toString();
     }
 
-    public String update(Object value) {
-        Class<?> clazz = Person.class;
+    public String update(Object value) throws IllegalAccessException {
+        Class<?> clazz = value.getClass();
 
         Table annotation = clazz.getAnnotation(Table.class);
         if (annotation == null) {
@@ -107,26 +107,30 @@ public class QueryGenerator {
         StringBuilder stringBuilder = new StringBuilder("UPDATE ");
         stringBuilder.append(annotation.name());
         stringBuilder.append(" SET ");
+        StringJoiner stringJoiner = new StringJoiner(", ");
+        int id = 0;
 
         for (Field declaredField : clazz.getDeclaredFields()) {
-            UpdateColumn updateColumnAnnotation = declaredField.getAnnotation(UpdateColumn.class);
+            Column updateColumnAnnotation = declaredField.getAnnotation(Column.class);
             if (updateColumnAnnotation != null) {
                 String columnName = updateColumnAnnotation.name().isEmpty() ? declaredField.getName() : updateColumnAnnotation.name();
-
-                Type typeOfDeclaredField = declaredField.getType();
-                stringBuilder.append(columnName);
-                if (typeOfDeclaredField.getTypeName().equals("java.lang.String")) {
-                    stringBuilder.append(" = '");
-                    stringBuilder.append(value);
-                    stringBuilder.append("' where id = 1;");
+                declaredField.setAccessible(true);
+                if (declaredField.getName().equals("id")) {
+                    id = declaredField.getInt(value);
                 } else {
-                    stringBuilder.append(" = ");
-                    stringBuilder.append(value);
-                    stringBuilder.append(" where id = 1;");
+                    if (declaredField.getType().getName().equals("java.lang.String")) {
+                        stringJoiner.add(columnName + " = '" + declaredField.get(value).toString() + "'");
+                    } else {
+                        stringJoiner.add(columnName + " = " + declaredField.get(value).toString());
+                    }
                 }
-                break;
+                declaredField.setAccessible(false);
             }
         }
+        stringBuilder.append(stringJoiner);
+        stringBuilder.append(" where id = ");
+        stringBuilder.append(id);
+        stringBuilder.append(";");
         return stringBuilder.toString();
     }
 }

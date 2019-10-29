@@ -32,18 +32,26 @@ public class QueryGeneratorTest {
     }
 
     @Test
-    public void testInsert() {
-        String insertSql = queryGenerator.insert("Peter");
-        String expectedSqlInsert = "INSERT INTO Persons (person_name) VALUES ('Peter');";
-        //String expectedSqlInsert = "INSERT INTO Persons (salary) VALUES (10.5);";
+    public void testInsert() throws IllegalAccessException {
+        Person person = new Person();
+        person.setId(2);
+        person.setName("Peter");
+        person.setSalary(10.5);
+
+        String insertSql = queryGenerator.insert(person);
+        String expectedSqlInsert = "INSERT INTO Persons (id, person_name, salary) VALUES (2, 'Peter', 10.5);";
         assertEquals(expectedSqlInsert, insertSql);
     }
 
     @Test
-    public void testUpdate() {
-        String updateSql = queryGenerator.update(10.5);
-        //String expectedSqlUpdate = "UPDATE Persons SET person_name = 'Dina' where id = 1;";
-        String expectedSqlUpdate = "UPDATE Persons SET salary = 10.5 where id = 1;";
+    public void testUpdate() throws IllegalAccessException {
+        Person person = new Person();
+        person.setId(2);
+        person.setName("Dina");
+        person.setSalary(13.3);
+
+        String updateSql = queryGenerator.update(person);
+        String expectedSqlUpdate = "UPDATE Persons SET person_name = 'Dina', salary = 13.3 where id = 2;";
         assertEquals(expectedSqlUpdate, updateSql);
     }
 }
