@@ -11,6 +11,7 @@ public class Person {
     @Column
     private double salary;
 
+
     public void setId(int id) {
         this.id = id;
     }
