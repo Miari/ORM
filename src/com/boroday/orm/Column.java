@@ -1,4 +1,4 @@
-package com.boroday.querygenerator;
+package com.boroday.orm;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,8 +1,9 @@
-package com.boroday.querygenerator;
+package com.boroday.orm;
 
 @Table(name = "Persons")
 public class Person {
     @Column
+    @Id
     private int id;
 
     @Column(name = "person_name")
@@ -10,7 +11,6 @@ public class Person {
 
     @Column
     private double salary;
-
 
     public void setId(int id) {
         this.id = id;
@@ -22,17 +22,5 @@ public class Person {
 
     public void setSalary(double salary) {
         this.salary = salary;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public double getSalary() {
-        return salary;
     }
 }
