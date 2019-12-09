@@ -1,12 +1,12 @@
-package com.boroday.orm;
+package com.boroday.orm.Entity;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target(ElementType.FIELD)
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Id {
+public @interface Table {
     String name() default "";
 }

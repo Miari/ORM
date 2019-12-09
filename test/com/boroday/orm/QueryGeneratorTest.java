@@ -1,5 +1,7 @@
 package com.boroday.orm;
 
+import com.boroday.orm.Entity.Manager;
+import com.boroday.orm.Entity.Person;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,7 +20,7 @@ public class QueryGeneratorTest {
     private ArrayList<String> expectedResultListManager;
 
     @Before //Before is used instead of BeforeClass as the full lists are required for two test cases
-    public void DataPreparation() {
+    public void dataPreparation() {
         tableName = "Persons";
         expectedResultList = new ArrayList<>();
         expectedResultList.add("id");
@@ -161,6 +163,11 @@ public class QueryGeneratorTest {
         expectedResultMap.put("id", "2");
         expectedResultMap.put("salary", "10.5");
         expectedResultMap.put("person_name", "'Peter'");
+        /*не могу убрать одинарные кавычки, так как insertSql, который я получаю ниже, это строка, из которой я
+        анализирую отдельные части, который тоже строки. Соответственно, если я положу в expectedResultMap
+        <String, Object> вместо <String, String> у меня перестаёт совпадать результат. А если я в HashMap всё ложу
+        строками, то настоящую строку могу выделить только таким способом, с помощью одинарных кавычек
+         */
 
         Person person = new Person();
         person.setId(2);
@@ -203,6 +210,11 @@ public class QueryGeneratorTest {
         //data preparation start
         HashMap<String, String> expectedResultMap = new HashMap<>();
         expectedResultMap.put("inn", "'Q5eF63DgFTH6'");
+        /*не могу убрать одинарные кавычки, так как insertSql, который я получаю ниже, это строка, из которой я
+        анализирую отдельные части, который тоже строки. Соответственно, если я положу в expectedResultMap
+        <String, Object> вместо <String, String> у меня перестаёт совпадать результат. А если я в HashMap всё ложу
+        строками, то настоящую строку могу выделить только таким способом, с помощью одинарных кавычек
+         */
         expectedResultMap.put("salary", "10.5");
         expectedResultMap.put("name", "null");
         expectedResultMap.put("bonus", "1.7");
@@ -215,6 +227,7 @@ public class QueryGeneratorTest {
         //data preparation end
 
         String insertSql = queryGenerator.insert(manager);
+        System.out.println(insertSql);
         //firstPart
         String firstPart = "INSERT INTO " + tableNameForSubclass + " (";
         assertTrue(insertSql.startsWith(firstPart));
@@ -232,13 +245,16 @@ public class QueryGeneratorTest {
         int lengthOfThirdPart = thirdPart.length();
         String fourthPart = insertSql.substring(indexOfThirdPart + lengthOfThirdPart, insertSql.length() - 2);
 
+
         //fifthPart
         assertTrue(insertSql.endsWith(");"));
 
         //test fields and values
         String[] fieldsFromSql = secondPart.split(", ");
-        String[] valuesFromSql = fourthPart.split(", ");
+        Object[] valuesFromSql = fourthPart.split(", ");
         for (int i = 0; i < fieldsFromSql.length; i++) {
+            System.out.println(fieldsFromSql[i] + "!" + valuesFromSql[i]);
+            System.out.println(expectedResultMap.get(fieldsFromSql[i]));
             assertTrue(expectedResultMap.remove(fieldsFromSql[i], valuesFromSql[i]));
         }
         assertTrue(expectedResultMap.isEmpty());
@@ -254,6 +270,11 @@ public class QueryGeneratorTest {
 
         HashMap<String, String> expectedResult = new HashMap<>();
         expectedResult.put("person_name", "'Dina'");
+        /*не могу убрать одинарные кавычки, так как insertSql, который я получаю ниже, это строка, из которой я
+        анализирую отдельные части, который тоже строки. Соответственно, если я положу в expectedResultMap
+        <String, Object> вместо <String, String> у меня перестаёт совпадать результат. А если я в HashMap всё ложу
+        строками, то настоящую строку могу выделить только таким способом, с помощью одинарных кавычек
+         */
         expectedResult.put("salary", "13.3");
         //data preparation end
 
@@ -284,10 +305,10 @@ public class QueryGeneratorTest {
 
     @Test
     public void testUpdateForSubClass() throws IllegalAccessException {
-        String id = "'Q5eF63DgFTH6'";
+        String id = "Q5eF63DgFTH6";
         //data preparation start
         Manager manager = new Manager();
-        manager.setInn("'Q5eF63DgFTH6'");
+        manager.setInn("Q5eF63DgFTH6");
         manager.setName(null);
         manager.setSalary(13.3);
         manager.setBonus(1.7);

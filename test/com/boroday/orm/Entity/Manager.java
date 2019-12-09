@@ -1,4 +1,4 @@
-package com.boroday.orm;
+package com.boroday.orm.Entity;
 
 @Table(name = "Managers")
 public class Manager extends Employee {

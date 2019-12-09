@@ -1,19 +1,18 @@
-package com.boroday.orm;
+package com.boroday.orm.Entity;
 
-@Table(name = "Persons")
-public class Person {
+abstract class Employee {
     @Column
     @Id
-    private int id;
+    private String inn;
 
-    @Column(name = "person_name")
+    @Column
     private String name;
 
     @Column
     private double salary;
 
-    public void setId(int id) {
-        this.id = id;
+    public void setInn(String inn) {
+        this.inn = inn;
     }
 
     public void setName(String name) {
