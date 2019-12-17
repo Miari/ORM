@@ -12,121 +12,46 @@ import java.util.StringJoiner;
 
 public class QueryGenerator {
     public String getAll(Class<?> clazz) {
-        Table annotation = clazz.getAnnotation(Table.class);
-        if (annotation == null) {
-            throw new IllegalArgumentException("@Table is missing");
-        }
-
-        StringBuilder stringBuilder = new StringBuilder("SELECT ");
-        String tableName = annotation.name().isEmpty() ? clazz.getName() : annotation.name();
-        StringJoiner stringJoiner = new StringJoiner(", ");
-        List<Field> listOfAllFields = getAllParentFields(clazz);
-        for (Field field : listOfAllFields) {
-            Column columnAnnotation = field.getAnnotation(Column.class);
-            if (columnAnnotation != null) {
-                String columnAnnotationName = columnAnnotation.name();
-                String columnName = columnAnnotationName.isEmpty() ? field.getName() : columnAnnotationName;
-                stringJoiner.add(columnName);
-            }
-        }
-        stringBuilder.append(stringJoiner);
-        stringBuilder.append(" FROM ");
-        stringBuilder.append(tableName);
+        classIsNull(clazz);
+        StringBuilder stringBuilder = getSelectPartOfQuery(clazz);
         stringBuilder.append(";");
-
         return stringBuilder.toString();
     }
 
     public String getById(Class<?> clazz, Object id) {
-        Table annotation = clazz.getAnnotation(Table.class);
-        if (annotation == null) {
-            throw new IllegalArgumentException("@Table is missing");
-        }
-
-        StringBuilder stringBuilder = new StringBuilder("SELECT ");
-        StringJoiner stringJoiner = new StringJoiner(", ");
-        List<Field> listOfAllFields = getAllParentFields(clazz);
-        String idColumnName = "";
-
-        for (Field field : listOfAllFields) {
-            Column columnAnnotation = field.getAnnotation(Column.class);
-            Id idAnnotation = field.getAnnotation(Id.class);
-            String oneOfListOfAllFieldsName = field.getName();
-            if (columnAnnotation != null) {
-                String columnAnnotationName = columnAnnotation.name();
-                String columnName = columnAnnotationName.isEmpty() ? oneOfListOfAllFieldsName : columnAnnotationName;
-                stringJoiner.add(columnName);
-                if (idAnnotation != null) {
-                    idColumnName = columnName;
-                }
-            }
-        }
-
-        stringBuilder.append(stringJoiner);
-        stringBuilder.append(" FROM ");
-
-        String annotationName = annotation.name();
-        String tableName = annotationName.isEmpty() ? clazz.getName() : annotationName;
-        stringBuilder.append(tableName);
-        stringBuilder.append(" WHERE ");
-        stringBuilder.append(idColumnName);
-        stringBuilder.append(" = ");
-        wrapIfNeededAndAppend(id, stringBuilder);
-        stringBuilder.append(";");
-
+        classIsNull(clazz);
+        objectValueIsNull(id);
+        StringBuilder stringBuilder = getSelectPartOfQuery(clazz);
+        getWherePartOfQuery(clazz, id, stringBuilder);
         return stringBuilder.toString();
     }
 
     public String delete(Class<?> clazz, Object id) {
-        Table annotation = clazz.getAnnotation(Table.class);
-        if (annotation == null) {
-            throw new IllegalArgumentException("@Table is missing");
-        }
+        classIsNull(clazz);
+        objectValueIsNull(id);
+        Table annotation = getTableAnnotation(clazz);
 
         StringBuilder stringBuilder = new StringBuilder("DELETE FROM ");
         String annotationName = annotation.name();
         String tableName = annotationName.isEmpty() ? clazz.getName() : annotationName;
         stringBuilder.append(tableName);
 
-        List<Field> listOfAllFields = getAllParentFields(clazz);
-        String idColumnName = "";
-        for (Field field : listOfAllFields) {
-            Column columnAnnotation = field.getAnnotation(Column.class);
-            Id idAnnotation = field.getAnnotation(Id.class);
-            String oneOfListOfAllFieldsName = field.getName();
-            if (columnAnnotation != null) {
-                String columnAnnotationName = columnAnnotation.name();
-                String columnName = columnAnnotationName.isEmpty() ? oneOfListOfAllFieldsName : columnAnnotationName;
-                if (idAnnotation != null) {
-                    idColumnName = columnName;
-                }
-            }
-        }
-
-        stringBuilder.append(" WHERE ");
-        stringBuilder.append(idColumnName);
-        stringBuilder.append(" = ");
-        wrapIfNeededAndAppend(id, stringBuilder);
-        stringBuilder.append(";");
+        getWherePartOfQuery(clazz, id, stringBuilder);
         return stringBuilder.toString();
     }
 
     public String insert(Object value) throws IllegalAccessException {
+        objectValueIsNull(value);
         Class<?> clazz = value.getClass();
 
-        Table annotation = clazz.getAnnotation(Table.class);
-        if (annotation == null) {
-            throw new IllegalArgumentException("@Table is missing");
-        }
+        Table annotation = getTableAnnotation(clazz);
         String annotationName = annotation.name();
         String tableName = annotationName.isEmpty() ? clazz.getName() : annotationName;
         StringBuilder stringBuilder = new StringBuilder("INSERT INTO ");
         stringBuilder.append(tableName);
-        stringBuilder.append(" (");
 
-        StringJoiner stringJoinerFields = new StringJoiner(", ");
-        StringJoiner stringJoinerValues = new StringJoiner(", ");
-        StringBuilder stringBuilderValues = new StringBuilder();
+        StringJoiner stringJoinerFields = new StringJoiner(", ", " (", ") VALUES ");
+        StringJoiner stringJoinerValues = new StringJoiner(", ", "(", ");");
 
         List<Field> listOfAllFields = getAllParentFields(clazz);
         for (Field field : listOfAllFields) {
@@ -140,35 +65,28 @@ public class QueryGenerator {
             field.setAccessible(true);
             Object valueOfDeclaredField = field.get(value);
             if (valueOfDeclaredField == null) {
-                stringBuilderValues.append("null");
+                stringJoinerValues.add("null");
             } else {
-                wrapIfNeededAndAppend(valueOfDeclaredField, stringBuilderValues);
+                stringJoinerValues.add(wrapIfNeededAndAppend(valueOfDeclaredField));
             }
-            stringJoinerValues.add(stringBuilderValues);
-            stringBuilderValues.delete(0, stringBuilderValues.length());
             field.setAccessible(false);
         }
         stringBuilder.append(stringJoinerFields);
-        stringBuilder.append(") VALUES (");
         stringBuilder.append(stringJoinerValues);
-        stringBuilder.append(");");
         return stringBuilder.toString();
     }
 
 
     public String update(Object value) throws IllegalAccessException {
+        objectValueIsNull(value);
         Class<?> clazz = value.getClass();
 
-        Table annotation = clazz.getAnnotation(Table.class);
-        if (annotation == null) {
-            throw new IllegalArgumentException("@Table is missing");
-        }
+        Table annotation = getTableAnnotation(clazz);
 
         StringBuilder stringBuilder = new StringBuilder("UPDATE ");
         stringBuilder.append(annotation.name());
         stringBuilder.append(" SET ");
         StringJoiner stringJoiner = new StringJoiner(", ");
-        StringBuilder stringBuilderValues = new StringBuilder();
 
         List<Field> listOfAllFields = getAllParentFields(clazz);
         Object id = null;
@@ -186,17 +104,13 @@ public class QueryGenerator {
             field.setAccessible(true);
             Object valueOfDeclaredField = field.get(value);
             if (valueOfDeclaredField == null) {
-                stringJoiner.add(columnName + " = null");
+                stringJoiner.add(createEqualString(columnName, null));
             } else {
                 if (idAnnotation != null) {
                     idColumnName = columnName;
                     id = valueOfDeclaredField;
                 } else {
-                    stringBuilderValues.append(columnName);
-                    stringBuilderValues.append(" = ");
-                    wrapIfNeededAndAppend(valueOfDeclaredField, stringBuilderValues);
-                    stringJoiner.add(stringBuilderValues);
-                    stringBuilderValues.delete(0, stringBuilderValues.length());
+                    stringJoiner.add(createEqualString(columnName, wrapIfNeededAndAppend(valueOfDeclaredField)));
                 }
             }
             field.setAccessible(false);
@@ -204,11 +118,68 @@ public class QueryGenerator {
 
         stringBuilder.append(stringJoiner);
         stringBuilder.append(" where ");
-        stringBuilder.append(idColumnName);
-        stringBuilder.append(" = ");
-        stringBuilder.append(id);
+        stringBuilder.append(createEqualString(idColumnName, id));
         stringBuilder.append(";");
         return stringBuilder.toString();
+    }
+
+    private String createEqualString(String columnName, Object id) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(columnName);
+        stringBuilder.append(" = ");
+        stringBuilder.append(id);
+        return stringBuilder.toString();
+    }
+
+
+    private StringBuilder getSelectPartOfQuery(Class<?> clazz) {
+        Table annotation = getTableAnnotation(clazz);
+        StringBuilder stringBuilder = new StringBuilder("SELECT ");
+        StringJoiner stringJoiner = new StringJoiner(", ");
+        List<Field> listOfAllFields = getAllParentFields(clazz);
+        for (Field field : listOfAllFields) {
+            Column columnAnnotation = field.getAnnotation(Column.class);
+            if (columnAnnotation != null) {
+                String columnAnnotationName = columnAnnotation.name();
+                String columnName = columnAnnotationName.isEmpty() ? field.getName() : columnAnnotationName;
+                stringJoiner.add(columnName);
+            }
+        }
+        stringBuilder.append(stringJoiner);
+        stringBuilder.append(" FROM ");
+        String tableName = annotation.name().isEmpty() ? clazz.getName() : annotation.name();
+        stringBuilder.append(tableName);
+        return stringBuilder;
+    }
+
+    private void getWherePartOfQuery(Class<?> clazz, Object id, StringBuilder stringBuilder) {
+        String idColumnName = "";
+        List<Field> listOfAllFields = getAllParentFields(clazz);
+        for (Field field : listOfAllFields) {
+            Column columnAnnotation = field.getAnnotation(Column.class);
+            Id idAnnotation = field.getAnnotation(Id.class);
+            String oneOfListOfAllFieldsName = field.getName();
+            if (columnAnnotation != null) {
+                String columnAnnotationName = columnAnnotation.name();
+                String columnName = columnAnnotationName.isEmpty() ? oneOfListOfAllFieldsName : columnAnnotationName;
+                if (idAnnotation != null) {
+                    idColumnName = columnName;
+                }
+            }
+        }
+
+        stringBuilder.append(" WHERE ");
+        stringBuilder.append(createEqualString(idColumnName, wrapIfNeededAndAppend(id)));
+        stringBuilder.append(";");
+    }
+
+    Table getTableAnnotation(Class<?> clazz) {
+        classIsNull(clazz);
+        Table annotation = clazz.getAnnotation(Table.class);
+        if (annotation == null) {
+            throw new IllegalArgumentException("@Table is missing");
+        }
+        return annotation;
     }
 
     private ArrayList<Field> getAllParentFields(Class<?> clazz) {
@@ -221,13 +192,27 @@ public class QueryGenerator {
         return allFieldsOfClassIncludingParentFields;
     }
 
-    private void wrapIfNeededAndAppend(Object value, StringBuilder stringBuilder) {
+    private String wrapIfNeededAndAppend(Object value) {
+        StringBuilder stringBuilder = new StringBuilder();
         if (value instanceof CharSequence) {
             stringBuilder.append("'");
             stringBuilder.append(value);
             stringBuilder.append("'");
         } else {
             stringBuilder.append(value);
+        }
+        return stringBuilder.toString();
+    }
+
+    private void classIsNull(Class<?> clazz) {
+        if (clazz == null) {
+            throw new NullPointerException("Class is null");
+        }
+    }
+
+    private void objectValueIsNull(Object value) {
+        if (value == null) {
+            throw new NullPointerException("Object value is null");
         }
     }
 }

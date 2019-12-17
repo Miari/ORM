@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -33,6 +34,11 @@ public class QueryGeneratorTest {
         expectedResultListManager.add("salary");
         expectedResultListManager.add("name");
         expectedResultListManager.add("bonus");
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testGetAllIdWithNullClass() {
+        queryGenerator.getAll(null);
     }
 
     @Test
@@ -84,6 +90,16 @@ public class QueryGeneratorTest {
             assertTrue(expectedResultListManager.remove(fieldFromSql));
         }
         assertTrue(expectedResultListManager.isEmpty());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testGetByIdWithNullObject() {
+        queryGenerator.getById(Person.class, null);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testGetByIdWithNullClass() {
+        queryGenerator.getById(null, 1);
     }
 
     @Test
@@ -140,6 +156,16 @@ public class QueryGeneratorTest {
         assertTrue(expectedResultListManager.isEmpty());
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testDeleteWithNullObject() {
+        queryGenerator.delete(Person.class, null);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testDeleteWithNullClass() {
+        queryGenerator.delete(null, 1);
+    }
+
     @Test
     public void testDelete() {
         int id = 1;
@@ -154,6 +180,11 @@ public class QueryGeneratorTest {
         String deleteByIdSql = queryGenerator.delete(Manager.class, id);
         String expectedSqlDeleteById = "DELETE FROM " + tableNameForSubclass + " WHERE inn = '" + id + "';";
         assertEquals(expectedSqlDeleteById, deleteByIdSql);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testInsertWithNullObject() throws IllegalAccessException {
+        queryGenerator.insert(null);
     }
 
     @Test
@@ -227,7 +258,6 @@ public class QueryGeneratorTest {
         //data preparation end
 
         String insertSql = queryGenerator.insert(manager);
-        System.out.println(insertSql);
         //firstPart
         String firstPart = "INSERT INTO " + tableNameForSubclass + " (";
         assertTrue(insertSql.startsWith(firstPart));
@@ -253,11 +283,14 @@ public class QueryGeneratorTest {
         String[] fieldsFromSql = secondPart.split(", ");
         Object[] valuesFromSql = fourthPart.split(", ");
         for (int i = 0; i < fieldsFromSql.length; i++) {
-            System.out.println(fieldsFromSql[i] + "!" + valuesFromSql[i]);
-            System.out.println(expectedResultMap.get(fieldsFromSql[i]));
             assertTrue(expectedResultMap.remove(fieldsFromSql[i], valuesFromSql[i]));
         }
         assertTrue(expectedResultMap.isEmpty());
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testUpdateWithNullObject() throws IllegalAccessException {
+        queryGenerator.update(null);
     }
 
     @Test
@@ -273,13 +306,13 @@ public class QueryGeneratorTest {
         /*не могу убрать одинарные кавычки, так как insertSql, который я получаю ниже, это строка, из которой я
         анализирую отдельные части, который тоже строки. Соответственно, если я положу в expectedResultMap
         <String, Object> вместо <String, String> у меня перестаёт совпадать результат. А если я в HashMap всё ложу
-        строками, то настоящую строку могу выделить только таким способом, с помощью одинарных кавычек
-         */
+        строками, то настоящую строку могу выделить только таким способом, с помощью одинарных кавычек*/
+
         expectedResult.put("salary", "13.3");
         //data preparation end
 
         String updateSql = queryGenerator.update(person);
-
+        System.out.println(updateSql);
         //firstPart
         String firstPart = "UPDATE " + tableName + " SET ";
         assertTrue(updateSql.startsWith(firstPart));
@@ -342,5 +375,15 @@ public class QueryGeneratorTest {
             assertTrue(expectedResult.remove(fieldAndValueSeparate[0], fieldAndValueSeparate[1]));
         }
         assertTrue(expectedResult.isEmpty());
+    }
+
+    @Test (expected = NullPointerException.class)
+    public void testGetTableAnnotationNull(){
+        queryGenerator.getTableAnnotation(null);
+    }
+
+    @Test (expected = IllegalArgumentException.class)
+    public void testGetTableAnnotationWithoutAnnotation(){
+        queryGenerator.getTableAnnotation(LinkedList.class);
     }
 }
